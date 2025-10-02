@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:15
+    container_name: pgvlr
+    restart: always
+    networks:
+      - vlrgg_net
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - "${POSTGRES_VOLUME}:/var/lib/postgresql/data"
+
+  private_api:
+    build:
+      context: ./private_api
+      dockerfile: Dockerfile
+    container_name: pgvlr_private_api
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - vlrgg_net
+    ports:
+      - "${PRIVATE_API_PORT}:8111"
+    volumes:
+      - ./private_api:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8111 --reload --reload-dir /app
+
+  nginx:
+    image: nginx:alpine
+    container_name: pgvlr_nginx
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - private_api
+    networks:
+      - vlrgg_net
+
+volumes:
+  vlrvolume:
+
+networks:
+  vlrgg_net:
+    name: vlrgg_net
+    driver: bridge
