@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -11,14 +12,12 @@ import os
 from models.series import VLRSeries, VLRSeriesList
 from models.event import VLREvent, VLREventList
 
-app = FastAPI(title="VLR GG PRIVATE API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await startup()
+    yield
+    await shutdown()
 
-def get_pool() -> Pool:
-    return app.state.pool
-
-app.include_router(api_v1.api_v1_router) # Register routes for v1 api
-
-@app.on_event("startup")
 async def startup():
     app.state.pool = await asyncpg.create_pool(
         user=os.getenv("POSTGRES_USER", "postgres"),
@@ -28,9 +27,15 @@ async def startup():
         port=int(os.getenv("PRIVATE_API_DB_PORT", 5432))
     )
 
-@app.on_event("shutdown")
+def get_pool() -> Pool:
+    return app.state.pool
+
 async def shutdown():
     await get_pool().close()
+
+app = FastAPI(title="VLR GG PRIVATE API", lifespan=lifespan)
+
+app.include_router(api_v1.api_v1_router) # Register routes for v1 api
 
 @app.middleware("http")
 async def no_cache_middleware(request, call_next):
@@ -90,7 +95,7 @@ async def reset_schema():
                         vlr_id INT NOT NULL,
                         name VARCHAR(300) NOT NULL,
                         status SMALLINT NOT NULL,
-                        series_id INT NOT NULL,
+                        series_id INT,
                         region VARCHAR(10),
                         location_long VARCHAR(200),
                         tags TEXT[] NOT NULL,

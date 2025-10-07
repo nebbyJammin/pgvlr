@@ -6,7 +6,7 @@ class VLREvent(BaseModel):
     vlr_id: int
     name: str
     status: int = Field(..., ge=-1, le=2)
-    series_id: int
+    series_id: Optional[int]
     region: Optional[str]
     location_long: Optional[str]
     tags: List[str]

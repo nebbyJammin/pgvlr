@@ -10,7 +10,7 @@ router = APIRouter() # Let the v1 parent handle the prefix
 
 @router.get("/")
 async def get_matches(event_id: Optional[int] = None, page: Optional[int] = None, pool: Pool = Depends(get_pool)):
-    LIMIT = 25
+    LIMIT = 100
 
     query = "SELECT * FROM MATCHES WHERE TRUE"
     params = []
