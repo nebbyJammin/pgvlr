@@ -164,21 +164,32 @@ async def add_event_bulk(events_list: VLREventList, pool: Pool = Depends(get_poo
     return {"message":  "ok"}
 
 @router.get("/get-unknown")
-async def get_unknown_series(pool: Pool = Depends(get_pool)):
+async def get_unknown_events(pool: Pool = Depends(get_pool)):
+    return await get_unknown_events_diff(id=None, pool=pool)
+
+@router.get("/get-unknown-diff")
+async def get_unknown_events_diff(id: Optional[List[int]] = Query(None), pool: Pool = Depends(get_pool)):
     results = []
+    params = []
+
+    query = f"""
+        SELECT i from generate_series(1, (SELECT MAX(id) FROM events)) as gs
+        (i)
+            WHERE TRUE
+    """
+
+    if id:
+        placeholders = ", ".join(f"${1+j}" for j in range(len(id)))
+        params.extend(id)
+        query += f" AND gs.i in ({placeholders})"
+
+    query += f" AND NOT EXISTS(SELECT 1 FROM events e WHERE e.id = gs.i) ORDER by i"
 
     async with pool.acquire() as conn:
         try:
-            results = await conn.fetch(
-                """
-                    SELECT i from generate_series(1, (SELECT MAX(id) FROM events)) as gs(i) 
-                        WHERE NOT EXISTS ( 
-                            SELECT 1 FROM events e WHERE e.id = gs.i 
-                        ) 
-                    ORDER BY i;
-                """
-            )
+            results = await conn.fetch(query, *params)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to return unknown event ids: {e}")
 
     return { "message": "ok", "id": [event["i"] for event in results]}
+
