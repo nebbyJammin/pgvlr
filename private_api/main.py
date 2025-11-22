@@ -160,20 +160,137 @@ async def reset_schema():
                     """         
                 )
 
-                #  series_to_insert = [
-                    #  (74, 74, 'Valorant Champions Tour 2025', 'Riot''s official 2025 tournament circuit.', 1),
-                    #  (73, 73, 'RIOT Games ONE', 'Riot Games ONE is the off-season programme for all things Riot-related organised by Riot Games Japan', 2),
-                #  ]
-#
-                #  # CREATE SAMPLE SERIES
-                #  await conn.executemany(
-                    #  """
-                    #  INSERT INTO SERIES (id, vlr_id, name, description, status)
-                    #  VALUES ($1, $2, $3, $4, $5)
-                    #  ON CONFLICT (id) DO NOTHING
-                    #  """,
-                    #  series_to_insert
-                #  )
+                # PLAYERS
+                await conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS players (
+                        id SERIAL,
+                        vlr_id INT NOT NULL,
+                        ign VARCHAR(100) NOT NULL,
+                        name VARCHAR(100),
+                        country_short VARCHAR(10),
+                        country_long VARCHAR(100),
+                        socials TEXT[] NOT NULL,
+                        last_scraped TIMESTAMP NOT NULL,
+
+                        CONSTRAINT players_pk_id PRIMARY KEY (id),
+                        CONSTRAINT players_unique_vlr_id UNIQUE (vlr_id)
+                    )
+                    """
+                )
+
+                # MAP
+                # NOTE: when map_num = 0, then it is the summary (all maps)
+                # Join with mapplayeroverviews -> mapplayersidedoverviews to get the precise data per player (categorised by atk/def/both halves)
+                # Join with mapplayerperformances to get the performances of each player
+                await conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS maps (
+                        id SERIAL,
+                        vlr_id INT,
+                        map_num INT NOT NULL,
+                        map_name VARCHAR(20),
+                        map_picked_by_team_id INT,
+                        t_side_starting_team_id INT,
+
+                        CONSTRAINT maps_pk_id PRIMARY KEY (id),
+                        CONSTRAINT maps_pk_unique_vlr_id UNIQUE (vlr_id),
+                        CONSTRAINT maps_fk_map_picked_by_team_id FOREIGN KEY (map_picked_by_team_id) references TEAMS(id)
+                        CONSTRAINT maps_fk_t_side_starting_team_id FOREIGN KEY (map_picked_by_team_id) references TEAMS(id)
+                    )
+                    """
+                )
+
+                # Map Overview for a player
+                # Join with mapplayersidedoverviews to get the summarised data categorised by attack/defence etc.
+                await conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS mapplayeroverviews (
+                        id SERIAL,
+                        map_id INT NOT NULL,
+                        player_id INT NOT NULL,
+                        team_id INT NOT NULL,
+
+                        two_ks INT,
+                        three_ks INT,
+                        four_ks INT,
+                        five_ks INT,
+
+                        one_vs_one INT,
+                        one_vs_two INT,
+                        one_vs_three INT,
+                        one_vs_four INT,
+                        one_vs_five INT,
+
+                        econ INT,
+                        plants INT,
+                        defuses INT,
+
+                        CONSTRAINT map_player_overviews_pk_id PRIMARY KEY (id),
+                        CONSTRAINT map_player_overviews_fk_map_id FOREIGN KEY (map_id) REFERENCES MAPS(id),
+                        CONSTRAINT map_player_overviews_fk_player_id FOREIGN KEY (player_id) REFERENCES PLAYERS(id),
+                        CONSTRAINT map_player_overviews_fk_team_id FOREIGN KEY (team_id) REFERENCES TEAMS(id)
+                    )
+                    """
+                )
+
+                # NOTE: side=0 is both sides; side=1 is attack; side=2 is defence. Each row represents a players stat summary of for a map (or whole series), containing its summary, attack and defence sided stats.
+                await conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS mapplayersidedoverviews (
+                        id SERIAL,
+                        map_player_overviews_id INT NOT NULL,
+                        side VARCHAR(20),
+                        acs INT,
+                        kills INT,
+                        deaths INT,
+                        assists INT,
+                        kast INT,
+                        adr INT,
+                        hs INT,
+                        fk INT,
+                        fd INT,
+
+                        CONSTRAINT map_player_sided_overviews_pk_id PRIMARY KEY (id),
+                        CONSTRAINT map_player_sided_overviews_fk_map_player_overviews_id FOREIGN KEY (map_player_overviews_id) references mapplayeroverviews(id)
+                    )
+                    """
+                )
+
+                # Agents<->Player (in some map). This is because the summary map table
+                # may have a player play multiple agents across multiple maps
+                await conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS mapplayeragents (
+                        id SERIAL,
+                        map_player_sided_overview_id INT NOT NULL,
+                        agent VARCHAR(20),
+
+                        CONSTRAINT map_player_agents_pk_id PRIMARY KEY (id),
+                        CONSTRAINT map_player_agents_fk_map_player_sided_overview_id FOREIGN KEY (map_player_sided_overview_id) references mapplayersidedoverviews(id)
+                    )
+                    """
+                )
+
+                # Economy (extra details) for each map (per team)
+                await conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS mapeconomies (
+                        id SERIAL,
+                        pistol_wins INT,
+                        eco INT,
+                        eco_wins INT,
+                        semi_eco INT,
+                        semi_eco_wins INT,
+                        semi_buy INT,
+                        semi_buy_wins INT,
+                        full_buy INT,
+                        full_buy_wins INT,
+
+                        CONSTRAINT map_economies_pk_id PRIMARY KEY (id)
+                    )
+                    """
+                )
 
     except PostgresError as e:
         raise HTTPException(status_code=400, detail=str(e))
