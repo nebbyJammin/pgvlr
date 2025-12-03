@@ -10,7 +10,7 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
-      - "${POSTGRES_VOLUME}:/var/lib/postgresql/data"
+      - "vlrvolume:/var/lib/postgresql/data"
 
   private_api:
     build:
@@ -26,6 +26,8 @@ services:
       - vlrgg_net
     ports:
       - "${PRIVATE_API_PORT}:8111"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./private_api:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8111 --reload --reload-dir /app
@@ -44,6 +46,8 @@ services:
       - vlrgg_net
     ports:
       - "${PUBLIC_API_PORT}:8222"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./private_api:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8222 --reload --reload-dir /app
