@@ -123,7 +123,7 @@ async def add_match_bulk(matches_list: VLRMatchList, pool: Pool = Depends(get_po
                         stage, tournament_round, tournament_note, status, date_start, team_1_id,
                         team_2_id, score_1, score_2, last_scraped)
                         VALUES ($1, $2, $3, $4, $5, 
-                        $6, $7, $8, $9, $10, $11, $12, $13)
+                        $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                         ON CONFLICT(id) DO UPDATE
                         SET vlr_id = EXCLUDED.vlr_id,
                             event_id = EXCLUDED.event_id,
@@ -136,6 +136,8 @@ async def add_match_bulk(matches_list: VLRMatchList, pool: Pool = Depends(get_po
                             team_2_id = EXCLUDED.team_2_id,
                             score_1 = EXCLUDED.score_1,
                             score_2 = EXCLUDED.score_2,
+                            vods = EXCLUDED.vods,
+                            streams = EXCLUDED.streams,
                             last_scraped = EXCLUDED.last_scraped
                         """,
                         item.vlr_id,
@@ -150,6 +152,8 @@ async def add_match_bulk(matches_list: VLRMatchList, pool: Pool = Depends(get_po
                         item.team_2_id,
                         item.score_1,
                         item.score_2,
+                        item.vods,
+                        item.streams,
                         item.date_scraped
                     )
 

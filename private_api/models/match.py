@@ -64,9 +64,9 @@ class VLRMatch(BaseModel):
     team_2_id: Optional[int] = None
     score_1: Optional[int] = None
     score_2: Optional[int] = None
-    
-    maps: Optional[VLRMap]
-
+    streams: Optional[List[str]] = None
+    vods: Optional[List[str]] = None 
+    #  maps: Optional[VLRMap]
     date_scraped: datetime
 
 class VLRMatchList(BaseModel):
