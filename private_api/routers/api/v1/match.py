@@ -121,7 +121,7 @@ async def add_match_bulk(matches_list: VLRMatchList, pool: Pool = Depends(get_po
                         """
                         INSERT INTO matches (id, vlr_id, event_id, 
                         stage, tournament_round, tournament_note, status, date_start, team_1_id,
-                        team_2_id, score_1, score_2, last_scraped)
+                        team_2_id, score_1, score_2, vods, streams, last_scraped)
                         VALUES ($1, $2, $3, $4, $5, 
                         $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                         ON CONFLICT(id) DO UPDATE
