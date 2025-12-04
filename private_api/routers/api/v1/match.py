@@ -103,9 +103,9 @@ async def get_matches(event_id: Optional[int] =
     except PostgresError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-    events_list = [dict(row) for row in rows]
+    match_list = [dict(row) for row in rows]
 
-    return {"status": "success", "data": events_list}
+    return {"status": "success", "data": match_list}
 
 @router.post("/bulk")
 async def add_match_bulk(matches_list: VLRMatchList, pool: Pool = Depends(get_pool)):
