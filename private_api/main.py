@@ -58,6 +58,10 @@ async def reset_schema():
     try:
         async with get_pool().acquire() as conn:
             async with conn.transaction():
+                # Enable levenstein distance && trigram matching. This is not strictly necessary but nice for VCT//CALENDAR
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;")
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+
                 # DROP TABLES
                 await conn.execute(
                     """
@@ -83,7 +87,7 @@ async def reset_schema():
                         name VARCHAR(500) NOT NULL,
                         description TEXT,
                         status SMALLINT NOT NULL,
-                        last_scraped TIMESTAMP NOT NULL,
+                        last_scraped TIMESTAMPTZ NOT NULL,
 
                         CONSTRAINT series_pk_id PRIMARY KEY (id),
                         CONSTRAINT series_unique_vlr_id UNIQUE (vlr_id)
@@ -108,7 +112,7 @@ async def reset_schema():
                         date_start DATE,
                         date_end DATE,
                         thumbnail TEXT,
-                        last_scraped TIMESTAMP NOT NULL,
+                        last_scraped TIMESTAMPTZ NOT NULL,
 
                         CONSTRAINT events_pk_id PRIMARY KEY (id),
                         CONSTRAINT events_unique_vlr_id UNIQUE (vlr_id),
@@ -130,7 +134,7 @@ async def reset_schema():
                         status INT NOT NULL,
                         logo TEXT NOT NULL,
                         socials TEXT[] NOT NULL,
-                        last_scraped TIMESTAMP NOT NULL,
+                        last_scraped TIMESTAMPTZ NOT NULL,
 
                         CONSTRAINT teams_pk_id PRIMARY KEY (id),
                         CONSTRAINT teams_unique_vlr_id UNIQUE (vlr_id)
@@ -149,14 +153,14 @@ async def reset_schema():
                         tournament_round VARCHAR(200) NOT NULL,
                         tournament_note TEXT,
                         status INT NOT NULL,
-                        date_start TIMESTAMP,
+                        date_start TIMESTAMPTZ,
                         team_1_id INT,
                         team_2_id INT,
                         score_1 INT,
                         score_2 INT,
                         vods TEXT[],
                         streams TEXT[],
-                        last_scraped TIMESTAMP NOT NULL,
+                        last_scraped TIMESTAMPTZ NOT NULL,
                         
                         CONSTRAINT matches_pk_id PRIMARY KEY (id),
                         CONSTRAINT matches_unique_vlr_id UNIQUE (vlr_id),
@@ -178,7 +182,7 @@ async def reset_schema():
                         #  country_short VARCHAR(10),
                         #  country_long VARCHAR(100),
                         #  socials TEXT[] NOT NULL,
-                        #  last_scraped TIMESTAMP NOT NULL,
+                        #  last_scraped TIMESTAMPTZ NOT NULL,
 #
                         #  CONSTRAINT players_pk_id PRIMARY KEY (id),
                         #  CONSTRAINT players_unique_vlr_id UNIQUE (vlr_id)

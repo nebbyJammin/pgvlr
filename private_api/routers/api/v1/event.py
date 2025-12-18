@@ -121,7 +121,7 @@ async def add_event_bulk(events_list: VLREventList, pool: Pool = Depends(get_poo
             for item in events_list.events:
                 try:
                     await conn.execute(
-                        """
+                        f"""
                         INSERT INTO events (id, vlr_id, name, 
                         status, series_id, region, location_long, tags, prize,
                         date_str, date_start, date_end, thumbnail, last_scraped)
@@ -131,7 +131,9 @@ async def add_event_bulk(events_list: VLREventList, pool: Pool = Depends(get_poo
                         SET vlr_id = EXCLUDED.vlr_id,
                             name = EXCLUDED.name,
                             status = EXCLUDED.status,
-                            series_id = EXCLUDED.series_id,
+                            {
+                                'series_id = EXCLUDED.series_id,' if item.series_id else ''
+                            }
                             region = EXCLUDED.region,
                             location_long = EXCLUDED.location_long,
                             tags = EXCLUDED.tags,
@@ -188,8 +190,9 @@ async def get_unknown_events_diff(id: Optional[List[int]] = Query(None), pool: P
     async with pool.acquire() as conn:
         try:
             results = await conn.fetch(query, *params)
+            max_event_id = await conn.fetch(f"SELECT max(id) FROM EVENTS")
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to return unknown event ids: {e}")
 
-    return { "message": "ok", "id": [event["i"] for event in results]}
+    return { "message": "ok", "id": [event["i"] for event in results] + ([inputId for inputId in id if inputId > max_event_id] if id else []) }
 
