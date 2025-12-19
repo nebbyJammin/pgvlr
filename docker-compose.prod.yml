@@ -4,12 +4,12 @@ services:
     expose: 
       - 5432
     env_file:
-      - .prod.env
+      - prod.env
 
   private_api:
     ports: !reset []
     expose: 
       - 8111
     env_file:
-      - .prod.env
+      - prod.env
     command: uvicorn main:app --host 0.0.0.0 --port 8111
