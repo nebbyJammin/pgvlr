@@ -190,9 +190,16 @@ async def get_unknown_events_diff(id: Optional[List[int]] = Query(None), pool: P
     async with pool.acquire() as conn:
         try:
             results = await conn.fetch(query, *params)
-            max_event_id = await conn.fetch(f"SELECT max(id) FROM EVENTS")
+            max_event_res = await conn.fetch(f"SELECT max(id) as id_max FROM EVENTS")
+            if max_event_res:
+                max_event_id = max_event_res[0]['id_max']
+            else:
+                max_event_id = -1
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to return unknown event ids: {e}")
 
-    return { "message": "ok", "id": [event["i"] for event in results] + ([inputId for inputId in id if inputId > max_event_id] if id else []) }
+    ids_bigger_than_max = [inputId for inputId in id if inputId > max_event_id] if id else []
+    ids = [event['i'] for event in results] + ids_bigger_than_max
+
+    return { "message": "ok", "id": ids }
 

@@ -23,8 +23,8 @@ async def startup():
         user=os.getenv("POSTGRES_USER", "postgres"),
         password=os.getenv("POSTGRES_PASSWORD", "password"),
         database=os.getenv("POSTGRES_DB", "mydb"),
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", 5432))
+        host=os.getenv("POSTGRES_HOST", "localhost"),
+        port=int(os.getenv("POSTGRES_PORT", 5432))
     )
 
 def get_pool() -> Pool:

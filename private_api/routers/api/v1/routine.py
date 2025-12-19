@@ -35,7 +35,7 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
             # Calculate priorities
                 start_time = match_task.get("date_start")
                 if start_time:
-                    time_delta: timedelta = start_time - datetime.now(tz=timezone.utc).replace(tzinfo=None)
+                    time_delta: timedelta = start_time - datetime.now(tz=timezone.utc)
                 else:
                     time_delta: timedelta = timedelta()
                 minutes_till_start = max(time_delta.total_seconds() / 60, 0)

@@ -32,39 +32,39 @@ services:
       - ./private_api:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8111 --reload --reload-dir /app
 
-  public_api:
-    build:
-      context: ./private_api
-      dockerfile: Dockerfile
-    container_name: pgvlr_public_api
-    restart: always
-    env_file:
-      - .env
-    depends_on:
-      - db
-    networks:
-      - vlrgg_net
-    ports:
-      - "${PUBLIC_API_PORT}:8222"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./private_api:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8222 --reload --reload-dir /app
+  # public_api:
+    # build:
+      # context: ./private_api
+      # dockerfile: Dockerfile
+    # container_name: pgvlr_public_api
+    # restart: always
+    # env_file:
+      # - .env
+    # depends_on:
+      # - db
+    # networks:
+      # - vlrgg_net
+    # ports:
+      # - "${PUBLIC_API_PORT}:8222"
+    # extra_hosts:
+      # - "host.docker.internal:host-gateway"
+    # volumes:
+      # - ./private_api:/app
+    # command: uvicorn main:app --host 0.0.0.0 --port 8222 --reload --reload-dir /app
 
-  nginx:
-    image: nginx:alpine
-    container_name: pgvlr_nginx
-    restart: always
-    ports:
-      - "443:443"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
-    depends_on:
-      - public_api
-    networks:
-      - vlrgg_net
+  # nginx:
+    # image: nginx:alpine
+    # container_name: pgvlr_nginx
+    # restart: always
+    # ports:
+      # - "443:443"
+    # volumes:
+      # - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./nginx/certs:/etc/nginx/certs:ro
+    # depends_on:
+      # - public_api
+    # networks:
+      # - vlrgg_net
 
 volumes:
   vlrvolume:

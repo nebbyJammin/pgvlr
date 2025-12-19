@@ -1,4 +1,4 @@
-.env
+*.env*
 .venv/
 
 
@@ -9,3 +9,5 @@ __pycache__/
 
 # vscode
 .vscode/
+
+pg_backups/
