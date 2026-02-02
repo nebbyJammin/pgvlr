@@ -42,16 +42,18 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
                 match_task["priority"] = round(100 + max(1000 - 5 * minutes_till_start, 0))
                 del match_task["date_start"]
 
-            # Get events that are upcoming and need to be scraped (>=15 minutes)
+            # Get events that are upcoming and need to be scraped (>=120 minutes)
+            # Note that the scraper will recursively scrape events
             rows = await conn.fetch(f"""
                 SELECT id, series_id, date_start from events
                 WHERE status = 0
-                AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 15
+                AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 120
             """)
 
             event_tasks: List[Dict[str, Any]] = [dict(row) for row in rows]
 
-            # Get events that are ongoing and need to be scraped (>=30 minutes)
+            # Get events that are ongoing and need to be scraped (>=60 minutes)
+            # Note that the scraper will recursively scrape events
             rows = await conn.fetch(f"""
                 SELECT id, series_id, date_start from events where status = 1
                 and {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 30
