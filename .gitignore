@@ -9,5 +9,3 @@ __pycache__/
 
 # vscode
 .vscode/
-
-pg_backups/
