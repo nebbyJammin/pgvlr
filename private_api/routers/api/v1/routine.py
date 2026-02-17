@@ -16,7 +16,7 @@ EPOCH_SINCE_LAST_SCRAPED = "EXTRACT(EPOCH FROM (NOW() AT TIME ZONE 'UTC' - last_
 async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
     try:
         async with pool.acquire() as conn:
-            # 0 = upcoming, 1 = ongoing
+            # -1 = unknown, 0 = upcoming, 1 = ongoing, 2 = completed
             # Get matches that are upcoming within the next 4 weeks and need to be scraped (>= 10 minutes)
             rows = await conn.fetch(f"""
                 SELECT id, event_id, date_start FROM matches
@@ -24,7 +24,7 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
                     (STATUS = 1) 
                         OR
                     (
-                        STATUS = 0 
+                        STATUS <= 0 
                         AND {EPOCH_SINCE_DATE_START} / 3600 <= 24*7
                         AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 10
                     )
