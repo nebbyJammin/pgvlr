@@ -42,12 +42,13 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
                 match_task["priority"] = round(100 + max(1000 - 5 * minutes_till_start, 0))
                 del match_task["date_start"]
 
-            # Get events that are upcoming and need to be scraped (>=120 minutes)
+            # Get events that are upcoming or unknown and need to be scraped (>=120 minutes)
             # Note that the scraper will recursively scrape events
             rows = await conn.fetch(f"""
                 SELECT id, series_id, date_start from events
-                WHERE status = 0
+                WHERE status <= 0
                 AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 120
+                AND {EPOCH_SINCE_DATE_START} / 3600 >= 24*7*52
             """)
 
             event_tasks: List[Dict[str, Any]] = [dict(row) for row in rows]
@@ -86,24 +87,6 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
 async def get_low_priority_tasks(pool: Pool = Depends(get_pool)):
     try:
         async with pool.acquire() as conn:
-            # Scrape all events/matches with completed status that started within the last day every 6 hours
-            rows = await conn.fetch(f"""
-                SELECT id, event_id from matches
-                WHERE status = 2
-                AND {EPOCH_SINCE_LAST_SCRAPED} / 3600 >= 6
-                AND {EPOCH_SINCE_DATE_START} / 3600 <= 24
-            """)
-
-            matches = [ {**dict(row), "priority": 10} for row in rows]
-
-            rows = await conn.fetch(f"""
-                SELECT id, series_id from events
-                WHERE status = 2
-                AND {EPOCH_SINCE_LAST_SCRAPED} / 3600 >= 6
-                AND {EPOCH_SINCE_DATE_START} / 3600 <= 24
-            """)
-            events = [ {**dict(row),  "priority": 10} for row in rows]
-
             # Scrape all events/matches with completed status that started within the last week every 2 days
             rows = await conn.fetch(
                 f"""
@@ -114,7 +97,8 @@ async def get_low_priority_tasks(pool: Pool = Depends(get_pool)):
                 """
             )
 
-            matches.extend([{**dict(row), "priority": 5} for row in rows])
+            #  matches.extend([{**dict(row), "priority": 5} for row in rows])
+            matches = [{**dict(row), "priority": 5} for row in rows]
 
             rows = await conn.fetch(
                 f"""
@@ -124,7 +108,8 @@ async def get_low_priority_tasks(pool: Pool = Depends(get_pool)):
                 """
             )
 
-            events.extend([{**dict(row), "priority": 5} for row in rows])
+            #  events.extend([{**dict(row), "priority": 5} for row in rows])
+            events = [{**dict(row), "priority": 5} for row in rows]
 
             # Scrape all events/matches with completed status that started within the last 30 days every 2 weeks
             rows = await conn.fetch(
@@ -172,35 +157,37 @@ async def get_low_priority_tasks(pool: Pool = Depends(get_pool)):
 
             events.extend([{**dict(row), "priority": 2} for row in rows])
 
+            # NOTE: We are not doing this anymore:
             # Scrape all events/matches with completed status that started over a year ago every 6 months
-            rows = await conn.fetch(
-                f"""
-                SELECT id, event_id from matches
-                WHERE status = 2
-                AND {EPOCH_SINCE_LAST_SCRAPED} / 3600 >= 24 * 30 * 6
-                AND {EPOCH_SINCE_DATE_START} / 3600 > 24 * 365
-                """
-            )
+            #  rows = await conn.fetch(
+                #  f"""
+                #  SELECT id, event_id from matches
+                #  WHERE status = 2
+                #  AND {EPOCH_SINCE_LAST_SCRAPED} / 3600 >= 24 * 30 * 6
+                #  AND {EPOCH_SINCE_DATE_START} / 3600 > 24 * 365
+                #  """
+            #  )
+#
+            #  matches.extend([{**dict(row), "priority": 1} for row in rows])
+#
+            #  rows = await conn.fetch(
+                #  f"""
+                #  SELECT id, series_id from events
+                #  WHERE status = 2
+                #  AND {EPOCH_SINCE_LAST_SCRAPED} / 3600 >= 24 * 30 * 6
+                #  AND {EPOCH_SINCE_DATE_START} / 3600 > 24 * 365
+                #  """
+            #  )
+#
+            #  events.extend([{**dict(row), "priority": 1} for row in rows])
 
-            matches.extend([{**dict(row), "priority": 1} for row in rows])
-
-            rows = await conn.fetch(
-                f"""
-                SELECT id, series_id from events
-                WHERE status = 2
-                AND {EPOCH_SINCE_LAST_SCRAPED} / 3600 >= 24 * 30 * 6
-                AND {EPOCH_SINCE_DATE_START} / 3600 > 24 * 365
-                """
-            )
-
-            events.extend([{**dict(row), "priority": 1} for row in rows])
-
-            # Scrape all series every day
+            # Scrape all series within 20 of the max series every day
             rows = await conn.fetch(
                 f"""
                 SELECT id from series
                 WHERE status = 2
                 AND {EPOCH_SINCE_LAST_SCRAPED} / 3600 >= 24
+                AND id >= (SELECT max(id)-20 FROM SERIES)
                 """
             )
 
