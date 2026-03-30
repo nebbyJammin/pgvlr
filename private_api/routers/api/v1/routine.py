@@ -49,7 +49,7 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
                 SELECT id, series_id, date_start from events
                 WHERE status <= 0
                 AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 120
-                AND ({EPOCH_SINCE_DATE_START} / 3600 <= 24*7*26)
+                AND ({EPOCH_SINCE_DATE_START} / 3600 <= 24*7*26 OR date_start is NULL)
             """)
 
             event_tasks: List[Dict[str, Any]] = [dict(row) for row in rows]
