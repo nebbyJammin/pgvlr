@@ -25,7 +25,7 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
                         OR
                     (
                         STATUS <= 0 
-                        AND {EPOCH_SINCE_DATE_START} / 3600 <= 24*7
+                        AND ({EPOCH_SINCE_DATE_START} / 3600 <= 24*7 OR {EPOCH_SINCE_DATE_START} IS NULL)
                         AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 10
                     )
             """)
@@ -49,12 +49,12 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
                 SELECT id, series_id, date_start from events
                 WHERE status <= 0
                 AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 120
-                AND {EPOCH_SINCE_DATE_START} / 3600 <= 24*7*26
+                AND ({EPOCH_SINCE_DATE_START} / 3600 <= 24*7*26)
             """)
 
             event_tasks: List[Dict[str, Any]] = [dict(row) for row in rows]
 
-            # Get events that are ongoing and need to be scraped (>=60 minutes)
+            # Get events that are ongoing and need to be scraped (>=30 minutes)
             # Note that the scraper will recursively scrape events
             rows = await conn.fetch(f"""
                 SELECT id, series_id, date_start from events where status = 1
