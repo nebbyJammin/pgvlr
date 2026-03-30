@@ -25,7 +25,7 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
                         OR
                     (
                         STATUS <= 0 
-                        AND ({EPOCH_SINCE_DATE_START} / 3600 <= 24*7 OR {EPOCH_SINCE_DATE_START} IS NULL)
+                        AND ({EPOCH_SINCE_DATE_START} / 3600 <= 24*7 OR date_start IS NULL)
                         AND {EPOCH_SINCE_LAST_SCRAPED} / 60 >= 10
                     )
             """)
