@@ -17,7 +17,7 @@ async def get_high_priority_tasks(pool: Pool = Depends(get_pool)):
     try:
         async with pool.acquire() as conn:
             # -1 = unknown, 0 = upcoming, 1 = ongoing, 2 = completed
-            # Get matches that are upcoming within the next 4 weeks and need to be scraped (>= 10 minutes)
+            # Get matches that are upcoming within the next week and need to be scraped (>= 10 minutes)
             rows = await conn.fetch(f"""
                 SELECT id, event_id, date_start FROM matches
                 WHERE 
